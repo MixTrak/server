@@ -3,7 +3,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const UserModel = require('./models/User.js')
-const port = 3001
+const port = process.env.PORT || 4000
 
 const app = express()
 app.use(express.json())
