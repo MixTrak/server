@@ -51,32 +51,31 @@ app.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
 
     // Check for empty fields
-    if (!name || !email || !password ) {
+    if (!name || !email || !password) {
         return res.status(400).json("All fields are required");
     }
     // Check for valid name
     if (typeof name !== 'string' || name.trim() === '') {
         return res.status(400).json("Invalid name");
     }
-    // Check for valid password format
-    if (typeof password.length < 8) {
+    // Fix password validation logic
+    if (password.length < 8) {
         return res.status(400).json("Password must be at least 8 characters long");
     }
-    if (typeof password.trim() === '') {
+    if (password.trim() === '') {
         return res.status(400).json("Invalid password");
     }
 
     try {
         const existingUser = await UserModel.findOne({ email });
         if (existingUser) {
-            return res.json("User Already Exists");
+            return res.status(409).json("User Already Exists"); // Use 409 Conflict for duplicate resource
         }
 
         const newUser = await UserModel.create({ name, email, password });
-        // You might want to return something more specific or a success message
         res.status(201).json(newUser); // 201 Created for successful resource creation
     } catch (error) {
-        console.error("Error during registration:", error); // Log the actual error
+        console.error("Error during registration:", error);
         res.status(500).json("Error registering user");
     }
 });
