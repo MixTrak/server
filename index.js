@@ -42,17 +42,28 @@ mongoose.connect('mongodb+srv://ayaanplayz18:COUWkUzm5BDFAnmk@cluster18.bodkggd.
 .then(() => {
     console.log("MongoDB Connection Established");
 })
-.catch(err => { // Added error handling for MongoDB connection
+.catch(err => { 
     console.error("MongoDB Connection Error:", err);
 });
 
 // paths
 app.post('/register', async (req, res) => {
-    const { name, email, password, subject} = req.body;
+    const { name, email, password } = req.body;
 
     // Check for empty fields
-    if (!name || !email || !password || !subject) {
+    if (!name || !email || !password ) {
         return res.status(400).json("All fields are required");
+    }
+    // Check for valid name
+    if (typeof name !== 'string' || name.trim() === '') {
+        return res.status(400).json("Invalid name");
+    }
+    // Check for valid password format
+    if (typeof password.length < 8) {
+        return res.status(400).json("Password must be at least 8 characters long");
+    }
+    if (typeof password.trim() === '') {
+        return res.status(400).json("Invalid password");
     }
 
     try {
@@ -61,7 +72,7 @@ app.post('/register', async (req, res) => {
             return res.json("User Already Exists");
         }
 
-        const newUser = await UserModel.create({ name, email, password, subject});
+        const newUser = await UserModel.create({ name, email, password });
         // You might want to return something more specific or a success message
         res.status(201).json(newUser); // 201 Created for successful resource creation
     } catch (error) {
