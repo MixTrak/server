@@ -55,14 +55,14 @@ app.post('/register', async (req, res) => {
         return res.status(400).json("All fields are required");
     }
     // Check for valid name
-    if (typeof name !== 'string' || name.trim() === '') {
+    if (typeof name !== 'string' && name.trim() === ' ') {
         return res.status(400).json("Invalid name");
     }
     // Fix password validation logic
     if (password.length < 8) {
         return res.status(400).json("Password must be at least 8 characters long");
     }
-    if (password.trim() === '') {
+    if (password.trim() === ' ') {
         return res.status(400).json("Invalid password");
     }
 
