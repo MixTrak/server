@@ -37,15 +37,16 @@ app.use(cors(corsOptions));
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false,
+    secure: false, // Use `true` for port 465, `false` for all other ports
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
+        pass: process.env.EMAIL_APP_PASSWORD,
     },
     tls: {
         rejectUnauthorized: false
     },
-    logger: true
+    logger: true,
+    debug: true, // Enable debugging
 });
 
 // Verify transporter connection
