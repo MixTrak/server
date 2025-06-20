@@ -34,42 +34,46 @@ app.use(cors(corsOptions));
 
 // Email configuration
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // or your email service
+  service: 'gmail', // Ensure this matches your email provider
   auth: {
-    user: process.env.EMAIL_USER, // Your email
-    pass: process.env.EMAIL_APP_PASSWORD // Your app password (not regular password)
+    user: process.env.EMAIL_USER, // Verify this email
+    pass: process.env.EMAIL_APP_PASSWORD // Verify this app password
   }
 });
 
 // Helper function to send verification email
 const sendVerificationEmail = async (email, name, token) => {
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
-  
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'Verify Your Email Address',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Welcome ${name}!</h2>
-        <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" 
-             style="background-color: #007bff; color: white; padding: 12px 30px; 
-                    text-decoration: none; border-radius: 5px; display: inline-block;">
-            Verify Email Address
-          </a>
+  try {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Verify Your Email Address',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Welcome ${name}!</h2>
+          <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" 
+               style="background-color: #007bff; color: white; padding: 12px 30px; 
+                      text-decoration: none; border-radius: 5px; display: inline-block;">
+              Verify Email Address
+            </a>
+          </div>
+          <p>Or copy and paste this link in your browser:</p>
+          <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
+          <p><strong>This link will expire in 24 hours.</strong></p>
+          <p>If you didn't create an account, please ignore this email.</p>
         </div>
-        <p>Or copy and paste this link in your browser:</p>
-        <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-        <p><strong>This link will expire in 24 hours.</strong></p>
-        <p>If you didn't create an account, please ignore this email.</p>
-      </div>
-    `
-  };
+      `
+    };
 
-  await transporter.sendMail(mailOptions);
-};
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending verification email:", error); // Log detailed error
+    throw new Error("Email service configuration error. Please contact support.");
+  }
+}
 
 // mongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
