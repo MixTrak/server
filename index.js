@@ -72,7 +72,7 @@ const sendVerificationEmail = async (email, name, token) => {
 };
 
 // mongoDB Connection
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connection Established");
   })
@@ -149,12 +149,14 @@ app.post('/register', async (req, res) => {
 
     } catch (error) {
         console.error("Error during registration:", error); // Log the error for debugging
+
+        // Improved error handling
         if (error.code === 'EAUTH') {
             res.status(500).json({ message: "Email service configuration error. Please contact support." });
         } else if (error.name === 'ValidationError') {
             res.status(400).json({ message: "Invalid data provided. Please check your input." });
         } else {
-            res.status(500).json({ message: "Error registering user. Please try again." });
+            res.status(500).json({ message: "An unexpected error occurred during registration. Please try again later." });
         }
     }
 });
