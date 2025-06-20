@@ -33,7 +33,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // --- END CORS Configuration ---
 
-// Update Email configuration
+// Email configuration
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
@@ -44,47 +44,70 @@ const transporter = nodemailer.createTransport({
     },
     tls: {
         rejectUnauthorized: false
-    }
+    },
+    logger: true
 });
 
 // Verify transporter connection
 transporter.verify(function(error, success) {
     if (error) {
-        console.error("SMTP connection error:", error);
+        console.error("SMTP connection error:", {
+            code: error.code,
+            command: error.command,
+            stack: error.stack
+        });
     } else {
-        console.log("SMTP server is ready to take our messages");
+        console.log("SMTP server is ready");
+        // Test email on server start
+        testEmailConnection();
     }
 });
 
-// Update the sendVerificationEmail function with better error handling
-const sendVerificationEmail = async (email, name, token) => {
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
-    const mailOptions = {
-        from: `"Account Verification" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: 'Verify Your Email Address',
-        html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome ${name}!</h2>
-          <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
-               style="background-color: #007bff; color: white; padding: 12px 30px; 
-                      text-decoration: none; border-radius: 5px; display: inline-block;">
-              Verify Email Address
-            </a>
-          </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-          <p><strong>This link will expire in 24 hours.</strong></p>
-          <p>If you didn't create an account, please ignore this email.</p>
-        </div>
-        `
-    };
-
+// Test email function
+const testEmailConnection = async () => {
     try {
+        const testMailOptions = {
+            from: process.env.EMAIL_USER,
+            to: process.env.EMAIL_USER,
+            subject: 'Server Start Test',
+            text: 'SMTP configuration test successful'
+        };
+        const info = await transporter.sendMail(testMailOptions);
+        console.log('Test email sent:', info.messageId);
+    } catch (error) {
+        console.error('Test email failed:', error);
+    }
+};
+
+// Helper function to send verification email
+const sendVerificationEmail = async (email, name, token) => {
+    try {
+        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
+        const mailOptions = {
+            from: `"Account Verification" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Verify Your Email Address',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Welcome ${name}!</h2>
+                    <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${verificationUrl}" 
+                           style="background-color: #007bff; color: white; padding: 12px 30px; 
+                                  text-decoration: none; border-radius: 5px; display: inline-block;">
+                            Verify Email Address
+                        </a>
+                    </div>
+                    <p>Or copy and paste this link in your browser:</p>
+                    <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
+                    <p><strong>This link will expire in 24 hours.</strong></p>
+                    <p>If you didn't create an account, please ignore this email.</p>
+                </div>
+            `
+        };
+
         const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent: ', info.messageId);
+        console.log('Verification email sent:', info.messageId);
         return info;
     } catch (error) {
         console.error('Email sending error:', error);
@@ -92,7 +115,7 @@ const sendVerificationEmail = async (email, name, token) => {
     }
 }
 
-// mongoDB Connection
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connection Established");
@@ -103,19 +126,19 @@ mongoose.connect(process.env.MONGO_URI)
   });
 
 // UPDATED REGISTRATION ENDPOINT
-app.post('/register', async (req, res) => {
+app.post('/register', async (req, res) => {    
     const { name, email, password } = req.body;
 
     // Check for empty fields
     if (!name || !email || !password) {
         return res.status(400).json({ message: "All fields are required" });
     }
-    
+
     // Check for valid name
     if (typeof name !== 'string' || name.trim() === '') {
         return res.status(400).json({ message: "Invalid name" });
     }
-    
+
     // Add email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -140,11 +163,9 @@ app.post('/register', async (req, res) => {
                 // User exists but not verified - resend verification email
                 const newToken = crypto.randomBytes(32).toString('hex');
                 const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
                 existingUser.verificationToken = newToken;
                 existingUser.tokenExpiry = tokenExpiry;
                 await existingUser.save();
-
                 await sendVerificationEmail(email, name, newToken);
                 return res.status(200).json({ 
                     message: "Verification email resent. Please check your inbox and verify your email." 
@@ -171,9 +192,8 @@ app.post('/register', async (req, res) => {
 
         res.status(201).json({ 
             message: "Registration successful! Please check your email and verify your account before logging in.",
-            userId: newUser._id 
+            userId: newUser._id
         });
-
     } catch (error) {
         console.error("Error during registration:", error.stack || error); // Log full error stack
 
@@ -213,7 +233,6 @@ app.get('/verify-email/:token', async (req, res) => {
 
         // Redirect to frontend with success message
         res.redirect(`${process.env.FRONTEND_URL}/login?verified=true`);
-
     } catch (error) {
         console.error("Error verifying email:", error);
         res.status(500).json({ message: "Error verifying email. Please try again." });
@@ -274,14 +293,13 @@ app.post('/resend-verification', async (req, res) => {
 
         // Generate new token
         const newToken = crypto.randomBytes(32).toString('hex');
-        const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         user.verificationToken = newToken;
         user.tokenExpiry = tokenExpiry;
         await user.save();
 
         await sendVerificationEmail(email, user.name, newToken);
-
         res.status(200).json({ message: "Verification email sent successfully" });
 
     } catch (error) {
@@ -305,16 +323,16 @@ app.get('/user/:email', async (req, res) => {
     }
 });
 
-// Basic health check endpoint
+// Clean up the health check endpoint
 app.get('/', (req, res) => {
-  try {
-    res.status(200).send('Backend is running!');
-  } catch (error) {
-    console.error("Health check error:", error);
-    res.status(500).send('Error: Backend health check failed.');
-  }
+    try {
+        res.status(200).send('Backend is running!');
+    } catch (error) {
+        console.error("Health check error:", error);
+        res.status(500).send('Backend health check failed');
+    }
 });
 
 app.listen(port, () => {
-    console.log(`Server Is Running On Port: ${port}`)
-})
+    console.log(`Server is running on port: ${port}`);
+});
