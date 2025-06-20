@@ -32,24 +32,37 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // --- END CORS Configuration ---
 
-// Email configuration
+// Update Email configuration
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Ensure this matches your email provider
-  auth: {
-    user: process.env.EMAIL_USER, // Verify this email
-    pass: process.env.EMAIL_APP_PASSWORD // Verify this app password
-  }
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
 });
 
-// Helper function to send verification email
+// Verify transporter connection
+transporter.verify(function(error, success) {
+    if (error) {
+        console.error("SMTP connection error:", error);
+    } else {
+        console.log("SMTP server is ready to take our messages");
+    }
+});
+
+// Update the sendVerificationEmail function with better error handling
 const sendVerificationEmail = async (email, name, token) => {
-  try {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
     const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Verify Your Email Address',
-      html: `
+        from: `"Account Verification" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Verify Your Email Address',
+        html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome ${name}!</h2>
           <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
@@ -65,14 +78,17 @@ const sendVerificationEmail = async (email, name, token) => {
           <p><strong>This link will expire in 24 hours.</strong></p>
           <p>If you didn't create an account, please ignore this email.</p>
         </div>
-      `
+        `
     };
 
-    await transporter.sendMail(mailOptions);
-  } catch (error) {
-    console.error("Error sending verification email:", error); // Log detailed error
-    throw new Error("Email service configuration error. Please contact support.");
-  }
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email sent: ', info.messageId);
+        return info;
+    } catch (error) {
+        console.error('Email sending error:', error);
+        throw new Error(error.message || "Failed to send verification email");
+    }
 }
 
 // mongoDB Connection
@@ -99,6 +115,12 @@ app.post('/register', async (req, res) => {
         return res.status(400).json({ message: "Invalid name" });
     }
     
+    // Add email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+    }
+
     // Password validation
     if (password.length < 8) {
         return res.status(400).json({ message: "Password must be at least 8 characters long" });
