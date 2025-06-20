@@ -12,8 +12,9 @@ app.use(express.json())
 
 // --- START CORS Configuration ---
 const allowedOrigins = [
-  'https://server-green-nu.vercel.app', // Frontend origin
-  'http://localhost:5173', // Add this for local development if needed
+    'https://server-green-nu.vercel.app', // Frontend origin
+    'http://localhost:5173',
+    'https://client-mixtraks-projects.vercel.app'
 ];
 
 const corsOptions = {
