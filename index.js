@@ -13,7 +13,7 @@ app.use(express.json())
 // --- START CORS Configuration ---
 const allowedOrigins = [
   'https://server-green-nu.vercel.app', // Frontend origin
-  'http://localhost:3000', // Add this for local development if needed
+  'http://localhost:5173', // Add this for local development if needed
 ];
 
 const corsOptions = {
@@ -148,7 +148,7 @@ app.post('/register', async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error during registration:", error); // Log the error for debugging
+        console.error("Error during registration:", error.stack || error); // Log full error stack
 
         // Improved error handling
         if (error.code === 'EAUTH') {
