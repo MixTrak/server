@@ -11,11 +11,8 @@ app.use(express.json())
 // --- START CORS Configuration ---
 // Define your allowed frontend origins. REPLACE WITH YOUR ACTUAL VERCEL FRONTEND URL!
 const allowedOrigins = [
-  'https://server-green-nu.vercel.app', // <-- IMPORTANT: Replace with your actual Vercel domain!
-  // Add other origins if needed, e.g., for local development if your backend is also deployed
-  // 'http://localhost:5173', // Example for local Vite development
-  // 'http://localhost:3000', // Example for local React development
-  // 'https://your-custom-domain.com', // If you have a custom domain for your frontend
+  'https://server-green-nu.vercel.app', // Frontend origin
+  'http://localhost:3000', // Add this for local development if needed
 ];
 
 const corsOptions = {
